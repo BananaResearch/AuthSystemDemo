@@ -9,6 +9,4 @@ public interface UserService {
     User registerUser(RegisterRequest registerRequest);
     JwtResponse loginUser(LoginRequest loginRequest, String deviceId, String location);
     String refreshToken(String refreshToken);
-    void forgotPassword(String email);
-    void resetPassword(String email, String code, String newPassword);
 }

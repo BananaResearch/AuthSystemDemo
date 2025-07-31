@@ -1,8 +1,10 @@
 package com.example.authsystem.controller;
 
+import com.example.authsystem.dto.ForgotPasswordRequest;
 import com.example.authsystem.dto.JwtResponse;
 import com.example.authsystem.dto.LoginRequest;
 import com.example.authsystem.dto.RegisterRequest;
+import com.example.authsystem.dto.ResetPasswordRequest;
 import com.example.authsystem.entity.User;
 import com.example.authsystem.service.UserService;
 import org.slf4j.Logger;
@@ -55,6 +57,30 @@ public class AuthController {
             String refreshToken = request.get("refreshToken");
             String newAccessToken = userService.refreshToken(refreshToken);
             return ResponseEntity.ok(new JwtResponse(newAccessToken, refreshToken, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+        try {
+            String code = userService.forgotPassword(forgotPasswordRequest.getEmail());
+            return ResponseEntity.ok().body("Password reset code sent to your email. code: " + code);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        try {
+            userService.resetPassword(
+                    resetPasswordRequest.getEmail(),
+                    resetPasswordRequest.getCode(),
+                    resetPasswordRequest.getNewPassword()
+            );
+            return ResponseEntity.ok().body("Password reset successfully!");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

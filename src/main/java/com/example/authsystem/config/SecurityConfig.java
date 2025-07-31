@@ -18,7 +18,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // 允许匿名访问注册和登录接口
-                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/reset-password",
+                    "/api/auth/forgot-password").permitAll()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated()
             );

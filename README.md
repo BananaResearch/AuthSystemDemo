@@ -3,10 +3,11 @@
 基于 Java 和 Spring Boot 的认证系统，实现了用户注册、登录、JWT 认证、密码找回等功能。
 
 ## 功能特性
---------------
+
 - 用户注册
 - 用户登录（JWT 认证）
 - 令牌刷新
+- 密码找回
 - 登录限流（5 分钟内连续失败 3 次锁定 15 分钟）
 - Redis 缓存支持
 - MySQL 数据库存储
@@ -98,6 +99,27 @@ POST /api/auth/refresh
 }
 ```
 
+### 密码找回
+
+```
+POST /api/auth/forgot-password
+
+{
+  "email": "john@example.com"
+}
+```
+
+### 重置密码
+
+```
+POST /api/auth/reset-password
+
+{
+  "email": "john@example.com",
+  "code": "123456",
+  "newPassword": "NewSecure@456"
+}
+```
 
 ## 数据库表结构
 
@@ -106,6 +128,7 @@ POST /api/auth/refresh
 - users: 用户表
 - roles: 角色表
 - user_roles: 用户角色关联表
+- verification_codes: 验证码表
 
 ## 安全特性
 

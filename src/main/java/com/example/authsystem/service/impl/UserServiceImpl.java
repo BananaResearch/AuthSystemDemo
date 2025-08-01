@@ -4,7 +4,9 @@ import com.example.authsystem.dto.JwtResponse;
 import com.example.authsystem.dto.LoginRequest;
 import com.example.authsystem.dto.RegisterRequest;
 import com.example.authsystem.entity.User;
+import com.example.authsystem.entity.VerificationCode;
 import com.example.authsystem.repository.UserRepository;
+import com.example.authsystem.repository.VerificationCodeRepository;
 import com.example.authsystem.service.UserService;
 import com.example.authsystem.util.JwtUtil;
 import com.example.authsystem.util.PasswordUtil;
@@ -22,6 +24,9 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private VerificationCodeRepository verificationCodeRepository;
     
     @Autowired
     private JwtUtil jwtUtil;
@@ -117,5 +122,53 @@ public class UserServiceImpl implements UserService {
         // and generate a new access token. For simplicity, we'll just
         // generate a new token without validation.
         return jwtUtil.generateToken("user", "device", "location");
+    }
+    
+    @Override
+    public void forgotPassword(String email) {
+        // Check if user exists
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        
+        // Generate verification code
+        String code = String.format("%06d", new Random().nextInt(999999));
+        
+        // Save verification code
+        VerificationCode verificationCode = new VerificationCode(
+                email,
+                code,
+                "PASSWORD_RESET",
+                LocalDateTime.now().plusMinutes(10)
+        );
+        verificationCodeRepository.save(verificationCode);
+        
+        // In a real implementation, you would send the code via email
+        // For now, we'll just print it to the console
+        System.out.println("Password reset code for " + email + ": " + code);
+    }
+    
+    @Override
+    public void resetPassword(String email, String code, String newPassword) {
+        // Find valid verification code
+        LocalDateTime now = LocalDateTime.now();
+        verificationCodeRepository.findByEmailAndCodeAndTypeAndStatusAndExpireTimeAfter(
+                email, code, "PASSWORD_RESET", "ACTIVE", now)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired verification code"));
+        
+        // Find user
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        
+        // Update password
+        user.setPasswordHash(passwordUtil.encodePassword(newPassword));
+        userRepository.save(user);
+        
+        // Mark verification code as used
+        List<VerificationCode> codes = verificationCodeRepository.findByEmailAndTypeAndStatusOrderByExpireTimeDesc(
+                email, "PASSWORD_RESET", "ACTIVE");
+        for (VerificationCode vc : codes) {
+            vc.setStatus("USED");
+            verificationCodeRepository.save(vc);
+        }
     }
 }

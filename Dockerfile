@@ -1,5 +1,5 @@
 # 使用 Eclipse Temurin 21 JDK 作为基础镜像
-FROM maven:3.9.11-eclipse-temurin-21-alpine
+FROM baresearch-registry.cn-beijing.cr.aliyuncs.com/baresearch/maven:3.9.11-eclipse-temurin-21-alpine
 
 # 设置工作目录
 WORKDIR /app

@@ -17,8 +17,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 允许匿名访问注册和登录接口
-                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                // 允许匿名访问Actuator健康检查端点
+                .requestMatchers("/api/actuator/**").permitAll()
+                // 允许匿名访问认证相关端点
+                .requestMatchers("/api/auth/**").permitAll()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated()
             );

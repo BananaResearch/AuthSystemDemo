@@ -1,0 +1,83 @@
+# Kubernetes Deployment for MySQL and Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-deployment
+  namespace: testing-demo
+  labels:
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      # MySQL Container
+      - name: mysql
+        image: baresearch-registry.cn-beijing.cr.aliyuncs.com/dockerhub/mysql:8.2
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "root"
+        - name: MYSQL_DATABASE
+          value: "auth_system"
+        livenessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-u", "root", "-proot"]
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-u", "root", "-proot"]
+          initialDelaySeconds: 30
+          periodSeconds: 5
+
+      # Redis Container
+      - name: redis
+        image: docker.1ms.run/redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: testing-demo
+spec:
+  selector:
+    app: database
+  ports:
+  - port: 3306
+    targetPort: 3306
+  type: ClusterIP
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: testing-demo
+spec:
+  selector:
+    app: database
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP

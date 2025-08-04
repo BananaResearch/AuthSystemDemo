@@ -1,0 +1,62 @@
+# Kubernetes Deployment for AuthSystemDemo Application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-system-deployment
+  namespace: testing-demo
+  labels:
+    app: auth-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-system
+  template:
+    metadata:
+      labels:
+        app: auth-system
+    spec:
+      containers:
+      # Application Container
+      - name: auth-app
+        image: baresearch-registry.cn-beijing.cr.aliyuncs.com/baresearch/auth-system-demo:{{imagetag}}
+        # image: baresearch-registry.cn-beijing.cr.aliyuncs.com/baresearch/auth-system-demo:290b4ce-202508071015
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://mysql-service:3306/auth_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "root"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "root"
+        - name: SPRING_DATA_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_DATA_REDIS_PORT
+          value: "6379"
+        livenessProbe:
+          httpGet:
+            path: /api/actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+# Service to Expose the Application
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-system-service
+  namespace: testing-demo
+spec:
+  selector:
+    app: auth-system
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP  # 或LoadBalancer，如果在支持的环境中

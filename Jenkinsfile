@@ -60,7 +60,65 @@ pipeline {
         }
         stage('Testing') {
             steps {
-                echo 'Deploying....'
+                echo 'Starting testing...'
+                script {
+                    def TIMEOUT = 60
+                    def SLEEPTIME = 5
+
+                    def gitCommitHash = sh(script: '''
+                        git rev-parse HEAD
+                    ''', returnStdout: true).trim()
+
+                    def response = httpRequest(
+                        url: 'http://accurate-testing-service.testing-demo.svc.baresearch.local:8000/analyze_commit',
+                        acceptType: 'APPLICATION_JSON_UTF8',
+                        contentType: 'APPLICATION_JSON',
+                        httpMode: 'POST',
+                        requestBody: """{
+                            "commit_sha": "${gitCommitHash}"
+                        }"""
+                    )
+                    
+                    if (response.status != 200) {
+                        error '调用测试失败...'
+                    }
+
+                    echo "Response Body: ${response.content}"
+                    def contentJson = readJSON text: response.content
+                    def task_id = contentJson.task_id
+                    echo "Task id: ${contentJson.task_id}"
+                    
+                    timeout(time: TIMEOUT, unit: 'SECONDS') {
+                        while (true) {
+                            def taskResponse = httpRequest(
+                                url: 'http://accurate-testing-service.testing-demo.svc.baresearch.local:8000/task_status/' +  contentJson.task_id,
+                                acceptType: 'APPLICATION_JSON_UTF8'
+                            )
+                            
+                            if (taskResponse.status != 200) {
+                                error '调用测试失败...'
+                            }
+                            def resultJson = readJSON text: taskResponse.content
+                            echo "任务状态：${resultJson.status}"
+                            
+                            if (resultJson.status == 'completed') {
+                                echo '测试成功！'
+                                break
+                            } else if (resultJson.status == 'failed') {
+                                error '测试失败：${resultJson.error}'
+                                break
+                            }
+                            
+                            sleep SLEEPTIME;
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deploy Prod') {
+            steps {
+                sleep 3
+                echo 'Deploy Prod Success...'
             }
         }
     }

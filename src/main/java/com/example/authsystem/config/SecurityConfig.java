@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 // 允许匿名访问商品相关接口
                 .requestMatchers("/api/products/**").permitAll()
+                .requestMatchers("/api/coupons/**").permitAll()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated()
             );
